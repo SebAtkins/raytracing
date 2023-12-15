@@ -13,6 +13,7 @@ public:
     double aspectRatio = 16.0 / 9.0;
     int imageWidth = 400;
     int samplesPerPixel = 10; // Count of random samples for each pixel
+    int maxDepth = 10; // Maximum number of ray bounces into scene
 
     void render(const hittable& world) {
         initialise();
@@ -25,7 +26,7 @@ public:
                 colour pixelColour(0, 0, 0);
                 for (int sample = 0; sample < samplesPerPixel; ++sample) {
                     ray r = getRay(i, j);
-                    pixelColour += rayColour(r, world);
+                    pixelColour += rayColour(r, maxDepth, world);
                 }
                 writeColor(std::cout, pixelColour, samplesPerPixel);
             }
@@ -85,10 +86,16 @@ private:
         return (px * pixelDeltaU) + (py * pixelDeltaV);
     }
 
-    colour rayColour(const ray& r, const hittable& world) {
+    colour rayColour(const ray& r, int depth, const hittable& world) {
         hitRecord rec;
-        if (world.hit(r, interval(0, infinity), rec)) {
-            return 0.5 * (rec.normal + colour(1, 1, 1));
+
+        // If we've exceeded the ray bounce limit, no more light is gathered.
+        if (depth <= 0)
+            return colour(0, 0, 0);
+
+        if (world.hit(r, interval(0.001, infinity), rec)) {
+            vec3 direction = randomOnHemisphere(rec.normal);
+            return 0.5 * rayColour(ray(rec.p, direction), depth - 1, world);
         }
 
         vec3 unitDirection = unitVector(r.direction());
