@@ -94,8 +94,11 @@ private:
             return colour(0, 0, 0);
 
         if (world.hit(r, interval(0.001, infinity), rec)) {
-            vec3 direction = randomOnHemisphere(rec.normal);
-            return 0.5 * rayColour(ray(rec.p, direction), depth - 1, world);
+            ray scattered;
+            colour attenuation;
+            if (rec.mat->scatter(r, rec, attenuation, scattered))
+                return attenuation * rayColour(scattered, depth - 1, world);
+            return colour(0, 0, 0);
         }
 
         vec3 unitDirection = unitVector(r.direction());
